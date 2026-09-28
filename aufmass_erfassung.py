@@ -4,7 +4,7 @@ import base64
 import hashlib
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 
 try:
@@ -21,7 +21,7 @@ except Exception:
 
 st.set_page_config(page_title="Aufmaß-Erfassung", layout="centered")
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.7.0"
 
 # ---------------------------------------------------------------------------
 # Konfiguration ueber Streamlit Secrets (in Streamlit Community Cloud unter
@@ -102,6 +102,124 @@ def github_datei_lesen(pfad_im_repo):
         return None, f"Verbindungsfehler: {e}"
 
 
+@st.cache_data(ttl=300)
+def oeffentliches_firmenprofil_laden():
+    """Holt Impressum-/Datenschutzangaben, die die Gewerbe-Zentrale unter
+    'Firmenprofil' -> 'Impressum & Datenschutz' -> 'An mobile Erfassung uebertragen'
+    bereitstellt. Enthaelt bewusst keine Zugangsdaten (SMTP/Telegram)."""
+    roh_bytes, fehler = github_datei_lesen("oeffentlich/firmenprofil_oeffentlich.json")
+    if fehler or not roh_bytes:
+        return None
+    try:
+        return json.loads(roh_bytes.decode("utf-8"))
+    except Exception:
+        return None
+
+
+def zeige_impressum_footer():
+    """Zeigt Impressum & Datenschutzhinweis an - Pflicht fuer diese oeffentlich
+    erreichbare Seite (Paragraph 5 Digitale-Dienste-Gesetz / DSGVO)."""
+    profil_oeff = oeffentliches_firmenprofil_laden()
+    with st.expander("Impressum & Datenschutz"):
+        if not profil_oeff or not profil_oeff.get("Firmenname"):
+            st.caption("Noch nicht hinterlegt. Der Betreiber kann dies in der Gewerbe-Zentrale unter 'Firmenprofil' -> 'Impressum & Datenschutz' einrichten und uebertragen.")
+            return
+        zeilen = [profil_oeff.get("Firmenname", "")]
+        if profil_oeff.get("Rechtsform"):
+            zeilen.append(f"Rechtsform: {profil_oeff['Rechtsform']}")
+        if profil_oeff.get("Ansprechpartner"):
+            zeilen.append(f"Vertretungsberechtigt: {profil_oeff['Ansprechpartner']}")
+        if profil_oeff.get("Strasse"):
+            zeilen.append(profil_oeff["Strasse"])
+        if profil_oeff.get("PLZ_Ort"):
+            zeilen.append(profil_oeff["PLZ_Ort"])
+        if profil_oeff.get("Telefon"):
+            zeilen.append(f"Telefon: {profil_oeff['Telefon']}")
+        if profil_oeff.get("Email"):
+            zeilen.append(f"E-Mail: {profil_oeff['Email']}")
+        if profil_oeff.get("USt_ID"):
+            zeilen.append(f"Umsatzsteuer-ID: {profil_oeff['USt_ID']}")
+        if profil_oeff.get("Handelsregister"):
+            zeilen.append(f"Handelsregister: {profil_oeff['Handelsregister']}")
+        if profil_oeff.get("Handwerkskammer"):
+            zeilen.append(f"Handwerkskammer/Berufsbezeichnung: {profil_oeff['Handwerkskammer']}")
+        st.write("  \n".join(zeilen))
+        st.caption(
+            f"{profil_oeff.get('Firmenname', 'Der Betreiber')} verarbeitet die hier eingegebenen Daten "
+            "(z. B. Name, Adresse, Fotos, Unterschrift) ausschliesslich zur Abwicklung des jeweiligen "
+            "Auftrags und gibt sie nicht an Dritte weiter, soweit dies nicht zur Vertragserfuellung "
+            "erforderlich ist."
+        )
+
+
+def zeige_angebot_annahme(angebotsnummer):
+    """Oeffentliche Seite (kein PIN-Login noetig), ueber die ein Kunde ein per Link
+    geteiltes Angebot ansehen und online annehmen kann. Wird ueber den URL-Parameter
+    ?modus=angebot&nr=<Angebotsnummer> aufgerufen (Link kommt aus der Gewerbe-Zentrale,
+    Report -> Angebote -> 'Online-Annahme')."""
+    st.title("Ihr Angebot")
+    daten_bytes, fehler_daten = github_datei_lesen(f"angebote_annahme/{angebotsnummer}/daten.json")
+    if fehler_daten or not daten_bytes:
+        st.error("Dieses Angebot wurde nicht gefunden oder ist nicht mehr verfuegbar. Bitte wenden Sie sich an den Absender des Links.")
+        zeige_impressum_footer()
+        st.stop()
+
+    try:
+        daten = json.loads(daten_bytes.decode("utf-8"))
+    except Exception:
+        st.error("Die Angebotsdaten konnten nicht gelesen werden.")
+        zeige_impressum_footer()
+        st.stop()
+
+    st.write(f"**{daten.get('Firmenname', '')}**")
+    st.write(f"Angebot **{angebotsnummer}** fuer {daten.get('Kunde', '')}")
+    st.metric("Betrag", f"{float(daten.get('Betrag', 0)):.2f} EUR")
+    if daten.get("Frist"):
+        st.caption(f"Gueltig bis: {daten['Frist']}")
+
+    pdf_bytes, _ = github_datei_lesen(f"angebote_annahme/{angebotsnummer}/angebot.pdf")
+    if pdf_bytes:
+        st.download_button("Angebot als PDF herunterladen", pdf_bytes, file_name=f"Angebot_{angebotsnummer}.pdf", mime="application/pdf")
+
+    annahme_bytes, _ = github_datei_lesen(f"angebote_annahme/{angebotsnummer}/annahme.json")
+    if annahme_bytes:
+        try:
+            annahme_daten = json.loads(annahme_bytes.decode("utf-8"))
+            st.success(f"Dieses Angebot wurde bereits am {annahme_daten.get('Angenommen_Am', '')} online angenommen. Sie werden in Kuerze kontaktiert.")
+        except Exception:
+            st.success("Dieses Angebot wurde bereits online angenommen.")
+        zeige_impressum_footer()
+        st.stop()
+
+    st.divider()
+    widerruf_bestaetigt = True
+    if daten.get("Verbraucher") and daten.get("Widerruf_Text"):
+        with st.expander("Widerrufsbelehrung (bitte lesen)", expanded=True):
+            st.text(daten["Widerruf_Text"])
+        widerruf_bestaetigt = st.checkbox("Ich habe die Widerrufsbelehrung gelesen und moechte das Angebot annehmen.")
+
+    if st.button("Angebot jetzt annehmen", type="primary", disabled=not widerruf_bestaetigt):
+        annahme_neu = {
+            "Angebotsnummer": angebotsnummer,
+            "Angenommen_Am": datetime.now().strftime("%d.%m.%Y %H:%M"),
+            "Bestaetigt_Von": "Kunde (online)",
+            "Widerrufsbelehrung_Angezeigt": bool(daten.get("Verbraucher"))
+        }
+        ok_annahme, meldung_annahme = github_datei_anlegen(
+            f"angebote_annahme/{angebotsnummer}/annahme.json",
+            json.dumps(annahme_neu, ensure_ascii=False, indent=2).encode("utf-8"),
+            f"Angebot {angebotsnummer} online angenommen"
+        )
+        if ok_annahme:
+            st.success("Vielen Dank! Ihre Annahme wurde uebermittelt.")
+            st.rerun()
+        else:
+            st.error(f"Die Annahme konnte nicht uebermittelt werden: {meldung_annahme}")
+
+    zeige_impressum_footer()
+    st.stop()
+
+
 @st.cache_data(ttl=60)
 def offene_termine_laden():
     """Holt die Liste der von der Gewerbe-Zentrale angelegten Termin-Vorlagen
@@ -142,6 +260,21 @@ def bild_komprimieren(foto_bytes):
 
 
 # ---------------------------------------------------------------------------
+# Oeffentliche Angebotsannahme (kein PIN-Login): wird ueber einen Link mit
+# ?modus=angebot&nr=<Angebotsnummer> aufgerufen, den der Kunde von der
+# Gewerbe-Zentrale per Mail bekommt. Muss vor dem PIN-Login abgefragt werden,
+# da der Kunde (anders als der Handwerker) die PIN nicht kennt.
+# ---------------------------------------------------------------------------
+_query_modus = st.query_params.get("modus", "")
+if _query_modus == "angebot":
+    _query_nr = st.query_params.get("nr", "")
+    if _query_nr:
+        zeige_angebot_annahme(_query_nr)
+    else:
+        st.error("Kein Angebot angegeben.")
+        st.stop()
+
+# ---------------------------------------------------------------------------
 # Login (einfacher PIN-Schutz, da die Seite oeffentlich erreichbar ist)
 # ---------------------------------------------------------------------------
 if "eingeloggt" not in st.session_state:
@@ -157,6 +290,7 @@ if not st.session_state.eingeloggt:
             st.rerun()
         else:
             st.error("PIN falsch.")
+    zeige_impressum_footer()
     st.stop()
 
 # ---------------------------------------------------------------------------
@@ -346,7 +480,7 @@ if modus == "Aufmaß":
 # ===========================================================================
 else:
     st.subheader("Kundendienstbericht")
-    st.caption("Nach dem Absenden wird der Bericht von der Gewerbe-Zentrale abgeholt und als PDF mit Unterschrift erstellt.")
+    st.caption("Nach dem Absenden wird der Bericht von der Gewerbe-Zentrale abgeholt und als PDF mit Unterschrift erstellt. Die fortlaufende Berichtsnummer (z. B. KDB-2026-0007) wird dabei automatisch vergeben und erscheint auf dem fertigen PDF.")
 
     if "kd_fotos" not in st.session_state:
         st.session_state.kd_fotos = []
@@ -391,7 +525,20 @@ else:
         height=150
     )
     kd_material = st.text_area("Verwendetes Material (optional)", key="kd_material")
-    kd_arbeitszeit = st.number_input("Arbeitszeit (Stunden, optional)", min_value=0.0, step=0.25, key="kd_arbeitszeit")
+
+    st.markdown("**Arbeitszeit**")
+    col_beginn, col_ende = st.columns(2)
+    with col_beginn:
+        kd_beginn = st.time_input("Beginn der Arbeit", datetime.now().replace(second=0, microsecond=0), key="kd_beginn")
+    with col_ende:
+        kd_ende = st.time_input("Ende der Arbeit", datetime.now().replace(second=0, microsecond=0), key="kd_ende")
+
+    kd_beginn_dt = datetime.combine(datetime.today(), kd_beginn)
+    kd_ende_dt = datetime.combine(datetime.today(), kd_ende)
+    if kd_ende_dt < kd_beginn_dt:
+        kd_ende_dt += timedelta(days=1)
+    kd_arbeitszeit = round((kd_ende_dt - kd_beginn_dt).total_seconds() / 3600, 2)
+    st.caption(f"Arbeitszeit: {kd_arbeitszeit:g} Stunden")
 
     st.markdown("**Fotos (optional)**")
     kd_foto_uploads = st.file_uploader(
@@ -480,6 +627,8 @@ else:
                 "datum_einsatz": kd_datum.strftime("%d.%m.%Y"),
                 "taetigkeit": kd_taetigkeit,
                 "material": kd_material,
+                "beginn": kd_beginn.strftime("%H:%M"),
+                "ende": kd_ende.strftime("%H:%M"),
                 "arbeitszeit_stunden": kd_arbeitszeit,
                 "fotos": foto_namen_kd,
                 "unterschrift": unterschrift_dateiname
@@ -502,3 +651,5 @@ st.divider()
 if st.button("Abmelden"):
     st.session_state.eingeloggt = False
     st.rerun()
+
+zeige_impressum_footer()
