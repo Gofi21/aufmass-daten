@@ -1,0 +1,19 @@
+{
+  "aufmass_id": "AM-20260928-103322-86d7f2",
+  "erstellt_am": "28.09.2026 10:33",
+  "kunde": "Mike Mikermann",
+  "adresse": "asdfasdfasd",
+  "notiz_projekt": "bad anschauen",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [
+        "foto_1_1.jpg"
+      ],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
