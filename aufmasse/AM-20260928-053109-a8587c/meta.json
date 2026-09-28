@@ -1,0 +1,25 @@
+{
+  "aufmass_id": "AM-20260928-053109-a8587c",
+  "erstellt_am": "28.09.2026 05:31",
+  "kunde": "Testuser",
+  "adresse": "Zu hause",
+  "notiz_projekt": "Test ob alles läuft",
+  "raeume": [
+    {
+      "name": "Badezimmer",
+      "positionen": [
+        {
+          "beschreibung": "Masse",
+          "laenge": 5.0,
+          "breite": 4.0,
+          "menge_manuell": 0.0
+        }
+      ],
+      "fotos": [],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav",
+        "sprachnotiz_1_2.wav"
+      ]
+    }
+  ]
+}
