@@ -4,4 +4,4 @@ altair
 requests
 reportlab
 Pillow
-streamlit-drawable-canvas
+streamlit-drawable-canvas-fix
