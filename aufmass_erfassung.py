@@ -14,7 +14,7 @@ except Exception:
 
 st.set_page_config(page_title="Aufmaß-Erfassung", layout="centered")
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 # ---------------------------------------------------------------------------
 # Konfiguration ueber Streamlit Secrets (in Streamlit Community Cloud unter
@@ -136,10 +136,26 @@ for r_idx, raum in enumerate(st.session_state.am_raeume):
             st.rerun()
 
         st.markdown("**Fotos**")
-        foto_aufnahme = st.camera_input("Foto aufnehmen", key=f"am_foto_{r_idx}")
-        if foto_aufnahme is not None:
-            raum["fotos"].append(bild_komprimieren(foto_aufnahme.getvalue()))
-            st.success(f"Foto zu '{raum['name']}' hinzugefügt ({len(raum['fotos'])} insgesamt).")
+        st.caption("Foto vorher mit der Kamera-App des Handys aufnehmen und hier hochladen.")
+        foto_uploads = st.file_uploader(
+            "Foto(s) hochladen",
+            type=["jpg", "jpeg", "png", "heic"],
+            accept_multiple_files=True,
+            key=f"am_foto_{r_idx}"
+        )
+        if foto_uploads:
+            bereits_verarbeitet = st.session_state.get(f"am_foto_verarbeitet_{r_idx}", set())
+            neu_hinzugefuegt = 0
+            for datei in foto_uploads:
+                kennung = f"{datei.name}_{datei.size}"
+                if kennung in bereits_verarbeitet:
+                    continue
+                raum["fotos"].append(bild_komprimieren(datei.getvalue()))
+                bereits_verarbeitet.add(kennung)
+                neu_hinzugefuegt += 1
+            st.session_state[f"am_foto_verarbeitet_{r_idx}"] = bereits_verarbeitet
+            if neu_hinzugefuegt:
+                st.success(f"{neu_hinzugefuegt} Foto(s) zu '{raum['name']}' hinzugefügt ({len(raum['fotos'])} insgesamt).")
 
         st.markdown("**Sprachnotiz**")
         audio_aufnahme = st.audio_input("Sprachnotiz aufnehmen", key=f"am_audio_{r_idx}")
