@@ -1,0 +1,27 @@
+{
+  "aufmass_id": "AM-20260928-074735-edb646",
+  "erstellt_am": "28.09.2026 07:47",
+  "kunde": "Jetzt g",
+  "adresse": "Es aber los",
+  "notiz_projekt": "Wenn alles läuft",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [
+        {
+          "beschreibung": "Fliesen",
+          "laenge": 0.6,
+          "breite": 0.4,
+          "menge_manuell": 20.0
+        }
+      ],
+      "fotos": [
+        "foto_1_1.jpg"
+      ],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav",
+        "sprachnotiz_1_2.wav"
+      ]
+    }
+  ]
+}
