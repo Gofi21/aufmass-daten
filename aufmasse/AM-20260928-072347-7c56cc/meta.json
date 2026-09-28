@@ -1,0 +1,18 @@
+{
+  "aufmass_id": "AM-20260928-072347-7c56cc",
+  "erstellt_am": "28.09.2026 07:23",
+  "kunde": "Nächster veruch",
+  "adresse": "Testumge",
+  "notiz_projekt": "",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav",
+        "sprachnotiz_1_2.wav"
+      ]
+    }
+  ]
+}
