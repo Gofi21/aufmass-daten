@@ -1,3 +1,7 @@
 streamlit>=1.36
+pandas
+altair
 requests
+reportlab
 Pillow
+streamlit-drawable-canvas
