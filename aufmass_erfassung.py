@@ -21,7 +21,7 @@ except Exception:
 
 st.set_page_config(page_title="Aufmaß-Erfassung", layout="centered")
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
 
 # ---------------------------------------------------------------------------
 # Konfiguration ueber Streamlit Secrets (in Streamlit Community Cloud unter
@@ -68,6 +68,60 @@ def github_datei_anlegen(pfad_im_repo, roh_bytes, commit_nachricht):
         return False, f"GitHub-Fehler ({antwort.status_code}): {antwort.text[:300]}"
     except Exception as e:
         return False, f"Verbindungsfehler: {e}"
+
+
+def github_liste(pfad_im_repo):
+    """Listet den Inhalt eines Ordners im konfigurierten GitHub-Repo (z. B. offene Termine)."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return [], "GitHub ist nicht konfiguriert."
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{pfad_im_repo}?ref={GITHUB_BRANCH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github+json"}
+    try:
+        antwort = requests.get(url, headers=headers, timeout=20)
+        if antwort.status_code == 200:
+            return antwort.json(), None
+        if antwort.status_code == 404:
+            return [], None
+        return [], f"GitHub-Fehler ({antwort.status_code})"
+    except Exception as e:
+        return [], f"Verbindungsfehler: {e}"
+
+
+def github_datei_lesen(pfad_im_repo):
+    """Laedt den Rohinhalt einer einzelnen Datei aus dem konfigurierten GitHub-Repo."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return None, "GitHub ist nicht konfiguriert."
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{pfad_im_repo}?ref={GITHUB_BRANCH}"
+    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.raw"}
+    try:
+        antwort = requests.get(url, headers=headers, timeout=20)
+        if antwort.status_code == 200:
+            return antwort.content, None
+        return None, f"GitHub-Fehler ({antwort.status_code})"
+    except Exception as e:
+        return None, f"Verbindungsfehler: {e}"
+
+
+@st.cache_data(ttl=60)
+def offene_termine_laden():
+    """Holt die Liste der von der Gewerbe-Zentrale angelegten Termin-Vorlagen
+    (fuer die Vorausfuellung des Kundendienstberichts). Wird 60 Sekunden lang
+    zwischengespeichert, damit nicht bei jedem Tastendruck neu abgerufen wird."""
+    eintraege, _ = github_liste("termine")
+    termine = []
+    for eintrag in eintraege:
+        if eintrag.get("type") != "dir":
+            continue
+        vorlage_bytes, fehler = github_datei_lesen(f"termine/{eintrag['name']}/vorlage.json")
+        if fehler or not vorlage_bytes:
+            continue
+        try:
+            vorlage = json.loads(vorlage_bytes.decode("utf-8"))
+            vorlage["_termin_id"] = eintrag["name"]
+            termine.append(vorlage)
+        except Exception:
+            continue
+    return termine
 
 
 def bild_komprimieren(foto_bytes):
@@ -128,6 +182,34 @@ if modus == "Aufmaß":
 
     if "am_raeume" not in st.session_state:
         st.session_state.am_raeume = [{"name": "Raum 1", "positionen": [], "fotos": [], "audios": []}]
+
+    # Falls eine Terminauswahl weiter unten "Daten uebernehmen" ausgeloest hat, werden
+    # die Werte hier - vor dem Erzeugen der Eingabefelder - angewendet (Streamlit
+    # verbietet das nachtraegliche Setzen eines bereits instanziierten Widget-Keys).
+    if "am_pending_kunde" in st.session_state:
+        st.session_state["am_kunde"] = st.session_state.pop("am_pending_kunde")
+    if "am_pending_adresse" in st.session_state:
+        st.session_state["am_adresse"] = st.session_state.pop("am_pending_adresse")
+    if "am_pending_notiz_projekt" in st.session_state:
+        st.session_state["am_notiz_projekt"] = st.session_state.pop("am_pending_notiz_projekt")
+
+    st.markdown("**Termin uebernehmen (optional)**")
+    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt (fuer einen Kunden oder Interessenten), kannst du die Daten hier automatisch uebernehmen.")
+    termine_offen_am = offene_termine_laden()
+    if not termine_offen_am:
+        st.caption("Keine vorausgefuellten Termine gefunden (oder GitHub nicht konfiguriert).")
+    else:
+        termin_optionen_am = ["Kein Termin - manuell erfassen"] + [
+            f"{t.get('datum_einsatz', '')} {t.get('uhrzeit', '')} - {t.get('kunde', '')}" for t in termine_offen_am
+        ]
+        termin_wahl_am = st.selectbox("Termin auswaehlen", termin_optionen_am, key="am_termin_wahl")
+        if termin_wahl_am != "Kein Termin - manuell erfassen":
+            if st.button("Daten aus Termin uebernehmen", key="am_termin_uebernehmen_btn"):
+                termin_gewaehlt_am = termine_offen_am[termin_optionen_am.index(termin_wahl_am) - 1]
+                st.session_state["am_pending_kunde"] = termin_gewaehlt_am.get("kunde", "")
+                st.session_state["am_pending_adresse"] = termin_gewaehlt_am.get("adresse", "")
+                st.session_state["am_pending_notiz_projekt"] = termin_gewaehlt_am.get("taetigkeit", "")
+                st.rerun()
 
     st.markdown("**Projekt / Baustelle**")
     am_kunde = st.text_input("Kunde / Ansprechpartner", key="am_kunde")
@@ -268,6 +350,34 @@ else:
 
     if "kd_fotos" not in st.session_state:
         st.session_state.kd_fotos = []
+
+    # Falls eine Terminauswahl weiter unten "Daten uebernehmen" ausgeloest hat, werden
+    # die Werte hier - vor dem Erzeugen der Eingabefelder - angewendet (Streamlit
+    # verbietet das nachtraegliche Setzen eines bereits instanziierten Widget-Keys).
+    if "kd_pending_kunde" in st.session_state:
+        st.session_state["kd_kunde"] = st.session_state.pop("kd_pending_kunde")
+    if "kd_pending_adresse" in st.session_state:
+        st.session_state["kd_adresse"] = st.session_state.pop("kd_pending_adresse")
+    if "kd_pending_taetigkeit" in st.session_state:
+        st.session_state["kd_taetigkeit"] = st.session_state.pop("kd_pending_taetigkeit")
+
+    st.markdown("**Termin uebernehmen (optional)**")
+    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt, kannst du die Daten hier automatisch uebernehmen.")
+    termine_offen = offene_termine_laden()
+    if not termine_offen:
+        st.caption("Keine vorausgefuellten Termine gefunden (oder GitHub nicht konfiguriert).")
+    else:
+        termin_optionen = ["Kein Termin - manuell erfassen"] + [
+            f"{t.get('datum_einsatz', '')} {t.get('uhrzeit', '')} - {t.get('kunde', '')}" for t in termine_offen
+        ]
+        termin_wahl = st.selectbox("Termin auswaehlen", termin_optionen, key="kd_termin_wahl")
+        if termin_wahl != "Kein Termin - manuell erfassen":
+            if st.button("Daten aus Termin uebernehmen"):
+                termin_gewaehlt = termine_offen[termin_optionen.index(termin_wahl) - 1]
+                st.session_state["kd_pending_kunde"] = termin_gewaehlt.get("kunde", "")
+                st.session_state["kd_pending_adresse"] = termin_gewaehlt.get("adresse", "")
+                st.session_state["kd_pending_taetigkeit"] = termin_gewaehlt.get("taetigkeit", "")
+                st.rerun()
 
     st.markdown("**Kunde / Einsatzort**")
     kd_kunde = st.text_input("Kunde / Ansprechpartner", key="kd_kunde")
