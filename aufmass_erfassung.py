@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import base64
+import hashlib
 import json
 import uuid
 from datetime import datetime
@@ -14,7 +15,7 @@ except Exception:
 
 st.set_page_config(page_title="Aufmaß-Erfassung", layout="centered")
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # ---------------------------------------------------------------------------
 # Konfiguration ueber Streamlit Secrets (in Streamlit Community Cloud unter
@@ -158,10 +159,16 @@ for r_idx, raum in enumerate(st.session_state.am_raeume):
                 st.success(f"{neu_hinzugefuegt} Foto(s) zu '{raum['name']}' hinzugefügt ({len(raum['fotos'])} insgesamt).")
 
         st.markdown("**Sprachnotiz**")
+        st.caption("Tipp: Für mehrere Positionen in einer Aufnahme zwischendurch \"neue Position\" sagen - die Gewerbe-Zentrale trennt den Text dann automatisch auf.")
         audio_aufnahme = st.audio_input("Sprachnotiz aufnehmen", key=f"am_audio_{r_idx}")
         if audio_aufnahme is not None:
-            raum["audios"].append(audio_aufnahme.getvalue())
-            st.success(f"Sprachnotiz zu '{raum['name']}' hinzugefügt ({len(raum['audios'])} insgesamt).")
+            audio_bytes = audio_aufnahme.getvalue()
+            kennung_audio = hashlib.md5(audio_bytes).hexdigest()
+            bereits_verarbeitet_audio = st.session_state.get(f"am_audio_verarbeitet_{r_idx}")
+            if kennung_audio != bereits_verarbeitet_audio:
+                raum["audios"].append(audio_bytes)
+                st.session_state[f"am_audio_verarbeitet_{r_idx}"] = kennung_audio
+                st.success(f"Sprachnotiz zu '{raum['name']}' hinzugefügt ({len(raum['audios'])} insgesamt).")
 
 col_add_raum, col_remove_raum = st.columns(2)
 with col_add_raum:
