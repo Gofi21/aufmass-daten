@@ -1,0 +1,19 @@
+{
+  "aufmass_id": "AM-20261001-052137-e0adb2",
+  "erstellt_am": "01.10.2026 05:21",
+  "kunde": "Mike Müller",
+  "adresse": "asdfasdfasd",
+  "notiz_projekt": "Bad anschauen",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [
+        "foto_1_1.jpg",
+        "foto_1_2.jpg",
+        "foto_1_3.jpg"
+      ],
+      "sprachnotizen": []
+    }
+  ]
+}
