@@ -1,0 +1,20 @@
+{
+  "aufmass_id": "AM-20261003-063003-ec27b8",
+  "erstellt_am": "03.10.2026 06:30",
+  "kunde": "123 nebenan",
+  "adresse": "Gerade über die starsse",
+  "notiz_projekt": "Wetter ist schlecht",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [
+        "foto_1_1.jpg",
+        "foto_1_2.jpg"
+      ],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
