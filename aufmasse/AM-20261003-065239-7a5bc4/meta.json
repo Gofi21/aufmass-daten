@@ -1,0 +1,21 @@
+{
+  "aufmass_id": "AM-20261003-065239-7a5bc4",
+  "erstellt_am": "03.10.2026 06:52",
+  "kunde": "Xyz",
+  "adresse": "Hannover",
+  "notiz_projekt": "Kalt",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [
+        "foto_1_1.jpg",
+        "foto_1_2.jpg",
+        "foto_1_3.jpg"
+      ],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
