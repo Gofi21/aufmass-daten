@@ -88,7 +88,7 @@ def github_liste(pfad_im_repo):
 
 
 def github_datei_lesen(pfad_im_repo):
-    """Laedt den Rohinhalt einer einzelnen Datei aus dem konfigurierten GitHub-Repo."""
+    """Lädt den Rohinhalt einer einzelnen Datei aus dem konfigurierten GitHub-Repo."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return None, "GitHub ist nicht konfiguriert."
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{pfad_im_repo}?ref={GITHUB_BRANCH}"
@@ -105,8 +105,8 @@ def github_datei_lesen(pfad_im_repo):
 @st.cache_data(ttl=300)
 def oeffentliches_firmenprofil_laden():
     """Holt Impressum-/Datenschutzangaben, die die Gewerbe-Zentrale unter
-    'Firmenprofil' -> 'Impressum & Datenschutz' -> 'An mobile Erfassung uebertragen'
-    bereitstellt. Enthaelt bewusst keine Zugangsdaten (SMTP/Telegram)."""
+    'Firmenprofil' -> 'Impressum & Datenschutz' -> 'An mobile Erfassung übertragen'
+    bereitstellt. Enthält bewusst keine Zugangsdaten (SMTP/Telegram)."""
     roh_bytes, fehler = github_datei_lesen("oeffentlich/firmenprofil_oeffentlich.json")
     if fehler or not roh_bytes:
         return None
@@ -117,12 +117,12 @@ def oeffentliches_firmenprofil_laden():
 
 
 def zeige_impressum_footer():
-    """Zeigt Impressum & Datenschutzhinweis an - Pflicht fuer diese oeffentlich
+    """Zeigt Impressum & Datenschutzhinweis an - Pflicht für diese öffentlich
     erreichbare Seite (Paragraph 5 Digitale-Dienste-Gesetz / DSGVO)."""
     profil_oeff = oeffentliches_firmenprofil_laden()
     with st.expander("Impressum & Datenschutz"):
         if not profil_oeff or not profil_oeff.get("Firmenname"):
-            st.caption("Noch nicht hinterlegt. Der Betreiber kann dies in der Gewerbe-Zentrale unter 'Firmenprofil' -> 'Impressum & Datenschutz' einrichten und uebertragen.")
+            st.caption("Noch nicht hinterlegt. Der Betreiber kann dies in der Gewerbe-Zentrale unter 'Firmenprofil' -> 'Impressum & Datenschutz' einrichten und übertragen.")
             return
         zeilen = [profil_oeff.get("Firmenname", "")]
         if profil_oeff.get("Rechtsform"):
@@ -146,21 +146,21 @@ def zeige_impressum_footer():
         st.write("  \n".join(zeilen))
         st.caption(
             f"{profil_oeff.get('Firmenname', 'Der Betreiber')} verarbeitet die hier eingegebenen Daten "
-            "(z. B. Name, Adresse, Fotos, Unterschrift) ausschliesslich zur Abwicklung des jeweiligen "
-            "Auftrags und gibt sie nicht an Dritte weiter, soweit dies nicht zur Vertragserfuellung "
+            "(z. B. Name, Adresse, Fotos, Unterschrift) ausschließlich zur Abwicklung des jeweiligen "
+            "Auftrags und gibt sie nicht an Dritte weiter, soweit dies nicht zur Vertragserfüllung "
             "erforderlich ist."
         )
 
 
 def zeige_angebot_annahme(angebotsnummer):
-    """Oeffentliche Seite (kein PIN-Login noetig), ueber die ein Kunde ein per Link
-    geteiltes Angebot ansehen und online annehmen kann. Wird ueber den URL-Parameter
+    """Öffentliche Seite (kein PIN-Login nötig), über die ein Kunde ein per Link
+    geteiltes Angebot ansehen und online annehmen kann. Wird über den URL-Parameter
     ?modus=angebot&nr=<Angebotsnummer> aufgerufen (Link kommt aus der Gewerbe-Zentrale,
     Report -> Angebote -> 'Online-Annahme')."""
     st.title("Ihr Angebot")
     daten_bytes, fehler_daten = github_datei_lesen(f"angebote_annahme/{angebotsnummer}/daten.json")
     if fehler_daten or not daten_bytes:
-        st.error("Dieses Angebot wurde nicht gefunden oder ist nicht mehr verfuegbar. Bitte wenden Sie sich an den Absender des Links.")
+        st.error("Dieses Angebot wurde nicht gefunden oder ist nicht mehr verfügbar. Bitte wenden Sie sich an den Absender des Links.")
         zeige_impressum_footer()
         st.stop()
 
@@ -172,10 +172,10 @@ def zeige_angebot_annahme(angebotsnummer):
         st.stop()
 
     st.write(f"**{daten.get('Firmenname', '')}**")
-    st.write(f"Angebot **{angebotsnummer}** fuer {daten.get('Kunde', '')}")
+    st.write(f"Angebot **{angebotsnummer}** für {daten.get('Kunde', '')}")
     st.metric("Betrag", f"{float(daten.get('Betrag', 0)):.2f} EUR")
     if daten.get("Frist"):
-        st.caption(f"Gueltig bis: {daten['Frist']}")
+        st.caption(f"Gültig bis: {daten['Frist']}")
 
     pdf_bytes, _ = github_datei_lesen(f"angebote_annahme/{angebotsnummer}/angebot.pdf")
     if pdf_bytes:
@@ -185,7 +185,7 @@ def zeige_angebot_annahme(angebotsnummer):
     if annahme_bytes:
         try:
             annahme_daten = json.loads(annahme_bytes.decode("utf-8"))
-            st.success(f"Dieses Angebot wurde bereits am {annahme_daten.get('Angenommen_Am', '')} online angenommen. Sie werden in Kuerze kontaktiert.")
+            st.success(f"Dieses Angebot wurde bereits am {annahme_daten.get('Angenommen_Am', '')} online angenommen. Sie werden in Kürze kontaktiert.")
         except Exception:
             st.success("Dieses Angebot wurde bereits online angenommen.")
         zeige_impressum_footer()
@@ -196,7 +196,7 @@ def zeige_angebot_annahme(angebotsnummer):
     if daten.get("Verbraucher") and daten.get("Widerruf_Text"):
         with st.expander("Widerrufsbelehrung (bitte lesen)", expanded=True):
             st.text(daten["Widerruf_Text"])
-        widerruf_bestaetigt = st.checkbox("Ich habe die Widerrufsbelehrung gelesen und moechte das Angebot annehmen.")
+        widerruf_bestaetigt = st.checkbox("Ich habe die Widerrufsbelehrung gelesen und möchte das Angebot annehmen.")
 
     if st.button("Angebot jetzt annehmen", type="primary", disabled=not widerruf_bestaetigt):
         annahme_neu = {
@@ -211,10 +211,10 @@ def zeige_angebot_annahme(angebotsnummer):
             f"Angebot {angebotsnummer} online angenommen"
         )
         if ok_annahme:
-            st.success("Vielen Dank! Ihre Annahme wurde uebermittelt.")
+            st.success("Vielen Dank! Ihre Annahme wurde übermittelt.")
             st.rerun()
         else:
-            st.error(f"Die Annahme konnte nicht uebermittelt werden: {meldung_annahme}")
+            st.error(f"Die Annahme konnte nicht übermittelt werden: {meldung_annahme}")
 
     zeige_impressum_footer()
     st.stop()
@@ -223,7 +223,7 @@ def zeige_angebot_annahme(angebotsnummer):
 @st.cache_data(ttl=60)
 def offene_termine_laden():
     """Holt die Liste der von der Gewerbe-Zentrale angelegten Termin-Vorlagen
-    (fuer die Vorausfuellung des Kundendienstberichts). Wird 60 Sekunden lang
+    (für die Vorausfüllung des Kundendienstberichts). Wird 60 Sekunden lang
     zwischengespeichert, damit nicht bei jedem Tastendruck neu abgerufen wird."""
     eintraege, _ = github_liste("termine")
     termine = []
@@ -243,7 +243,7 @@ def offene_termine_laden():
 
 
 def bild_komprimieren(foto_bytes):
-    """Verkleinert ein Foto auf eine sinnvolle Groesse, damit es sicher per API hochgeladen werden kann."""
+    """Verkleinert ein Foto auf eine sinnvolle Größe, damit es sicher per API hochgeladen werden kann."""
     if not PIL_VERFUEGBAR:
         return foto_bytes
     try:
@@ -300,7 +300,7 @@ st.title("Vor-Ort-Erfassung")
 st.caption(f"Version {APP_VERSION}")
 
 modus = st.radio(
-    "Was moechtest du erfassen?",
+    "Was möchtest du erfassen?",
     ["Aufmaß", "Kundendienstbericht"],
     horizontal=True,
     key="modus_auswahl"
@@ -317,6 +317,18 @@ if modus == "Aufmaß":
     if "am_raeume" not in st.session_state:
         st.session_state.am_raeume = [{"name": "Raum 1", "positionen": [], "fotos": [], "audios": []}]
 
+    # Die Aufmaß-ID wird bewusst schon hier beim Start der Erfassung erzeugt
+    # (nicht erst beim Klick auf "Aufmaß übermitteln"): Fotos und Sprachnotizen
+    # werden dadurch sofort nach der Aufnahme auf GitHub gesichert, statt erst
+    # ganz am Ende gesammelt hochgeladen zu werden. So geht bei einem leeren
+    # Akku, einem Absturz der App oder einem Verbindungsabbruch mitten in der
+    # Erfassung nichts verloren, was bis zu diesem Zeitpunkt schon fotografiert
+    # oder aufgesprochen wurde.
+    if "am_aufmass_id" not in st.session_state:
+        st.session_state.am_aufmass_id = f"AM-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+    aufmass_id = st.session_state.am_aufmass_id
+    basis_pfad = f"aufmasse/{aufmass_id}"
+
     # Falls eine Terminauswahl weiter unten "Daten uebernehmen" ausgeloest hat, werden
     # die Werte hier - vor dem Erzeugen der Eingabefelder - angewendet (Streamlit
     # verbietet das nachtraegliche Setzen eines bereits instanziierten Widget-Keys).
@@ -327,18 +339,18 @@ if modus == "Aufmaß":
     if "am_pending_notiz_projekt" in st.session_state:
         st.session_state["am_notiz_projekt"] = st.session_state.pop("am_pending_notiz_projekt")
 
-    st.markdown("**Termin uebernehmen (optional)**")
-    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt (fuer einen Kunden oder Interessenten), kannst du die Daten hier automatisch uebernehmen.")
+    st.markdown("**Termin übernehmen (optional)**")
+    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt (für einen Kunden oder Interessenten), kannst du die Daten hier automatisch übernehmen.")
     termine_offen_am = offene_termine_laden()
     if not termine_offen_am:
-        st.caption("Keine vorausgefuellten Termine gefunden (oder GitHub nicht konfiguriert).")
+        st.caption("Keine vorausgefüllten Termine gefunden (oder GitHub nicht konfiguriert).")
     else:
         termin_optionen_am = ["Kein Termin - manuell erfassen"] + [
             f"{t.get('datum_einsatz', '')} {t.get('uhrzeit', '')} - {t.get('kunde', '')}" for t in termine_offen_am
         ]
-        termin_wahl_am = st.selectbox("Termin auswaehlen", termin_optionen_am, key="am_termin_wahl")
+        termin_wahl_am = st.selectbox("Termin auswählen", termin_optionen_am, key="am_termin_wahl")
         if termin_wahl_am != "Kein Termin - manuell erfassen":
-            if st.button("Daten aus Termin uebernehmen", key="am_termin_uebernehmen_btn"):
+            if st.button("Daten aus Termin übernehmen", key="am_termin_uebernehmen_btn"):
                 termin_gewaehlt_am = termine_offen_am[termin_optionen_am.index(termin_wahl_am) - 1]
                 st.session_state["am_pending_kunde"] = termin_gewaehlt_am.get("kunde", "")
                 st.session_state["am_pending_adresse"] = termin_gewaehlt_am.get("adresse", "")
@@ -384,16 +396,25 @@ if modus == "Aufmaß":
             if foto_uploads:
                 bereits_verarbeitet = st.session_state.get(f"am_foto_verarbeitet_{r_idx}", set())
                 neu_hinzugefuegt = 0
+                fehler_foto = []
                 for datei in foto_uploads:
                     kennung = f"{datei.name}_{datei.size}"
                     if kennung in bereits_verarbeitet:
                         continue
-                    raum["fotos"].append(bild_komprimieren(datei.getvalue()))
+                    foto_bytes = bild_komprimieren(datei.getvalue())
+                    dateiname = f"foto_{r_idx + 1}_{len(raum['fotos']) + 1}.jpg"
+                    ok, meldung = github_datei_anlegen(f"{basis_pfad}/{dateiname}", foto_bytes, f"Foto zu Aufmaß {aufmass_id}")
+                    if ok:
+                        raum["fotos"].append(dateiname)
+                        neu_hinzugefuegt += 1
+                    else:
+                        fehler_foto.append(f"{datei.name}: {meldung}")
                     bereits_verarbeitet.add(kennung)
-                    neu_hinzugefuegt += 1
                 st.session_state[f"am_foto_verarbeitet_{r_idx}"] = bereits_verarbeitet
                 if neu_hinzugefuegt:
-                    st.success(f"{neu_hinzugefuegt} Foto(s) zu '{raum['name']}' hinzugefügt ({len(raum['fotos'])} insgesamt).")
+                    st.success(f"{neu_hinzugefuegt} Foto(s) zu '{raum['name']}' hochgeladen und gesichert ({len(raum['fotos'])} insgesamt).")
+                if fehler_foto:
+                    st.warning("Nicht gesichert werden konnte: " + "; ".join(fehler_foto))
 
             st.markdown("**Sprachnotiz**")
             st.caption("Tipp: Für mehrere Positionen in einer Aufnahme zwischendurch \"neue Position\" sagen - die Gewerbe-Zentrale trennt den Text dann automatisch auf.")
@@ -403,9 +424,14 @@ if modus == "Aufmaß":
                 kennung_audio = hashlib.md5(audio_bytes).hexdigest()
                 bereits_verarbeitet_audio = st.session_state.get(f"am_audio_verarbeitet_{r_idx}")
                 if kennung_audio != bereits_verarbeitet_audio:
-                    raum["audios"].append(audio_bytes)
-                    st.session_state[f"am_audio_verarbeitet_{r_idx}"] = kennung_audio
-                    st.success(f"Sprachnotiz zu '{raum['name']}' hinzugefügt ({len(raum['audios'])} insgesamt).")
+                    dateiname_audio = f"sprachnotiz_{r_idx + 1}_{len(raum['audios']) + 1}.wav"
+                    ok_audio, meldung_audio = github_datei_anlegen(f"{basis_pfad}/{dateiname_audio}", audio_bytes, f"Sprachnotiz zu Aufmaß {aufmass_id}")
+                    if ok_audio:
+                        raum["audios"].append(dateiname_audio)
+                        st.session_state[f"am_audio_verarbeitet_{r_idx}"] = kennung_audio
+                        st.success(f"Sprachnotiz zu '{raum['name']}' hochgeladen und gesichert ({len(raum['audios'])} insgesamt).")
+                    else:
+                        st.warning(f"Sprachnotiz konnte nicht gesichert werden: {meldung_audio}")
 
     col_add_raum, col_remove_raum = st.columns(2)
     with col_add_raum:
@@ -424,36 +450,18 @@ if modus == "Aufmaß":
         if not am_kunde:
             st.warning("Bitte mindestens den Kunden/Ansprechpartner angeben.")
         else:
-            aufmass_id = f"AM-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
-            basis_pfad = f"aufmasse/{aufmass_id}"
-
-            raeume_meta = []
-            fehler_liste = []
-            for r_idx, raum in enumerate(st.session_state.am_raeume):
-                foto_namen = []
-                for f_idx, foto_bytes in enumerate(raum["fotos"]):
-                    dateiname = f"foto_{r_idx + 1}_{f_idx + 1}.jpg"
-                    ok, meldung = github_datei_anlegen(f"{basis_pfad}/{dateiname}", foto_bytes, f"Foto zu Aufmaß {aufmass_id}")
-                    if ok:
-                        foto_namen.append(dateiname)
-                    else:
-                        fehler_liste.append(f"{dateiname}: {meldung}")
-
-                audio_namen = []
-                for a_idx, audio_bytes in enumerate(raum["audios"]):
-                    dateiname = f"sprachnotiz_{r_idx + 1}_{a_idx + 1}.wav"
-                    ok, meldung = github_datei_anlegen(f"{basis_pfad}/{dateiname}", audio_bytes, f"Sprachnotiz zu Aufmaß {aufmass_id}")
-                    if ok:
-                        audio_namen.append(dateiname)
-                    else:
-                        fehler_liste.append(f"{dateiname}: {meldung}")
-
-                raeume_meta.append({
+            # Fotos und Sprachnotizen wurden bereits beim Aufnehmen einzeln
+            # hochgeladen (siehe oben) - hier muss nur noch die Zusammenfassung
+            # (meta.json) mit den schon gesicherten Dateinamen geschrieben werden.
+            raeume_meta = [
+                {
                     "name": raum["name"],
                     "positionen": raum["positionen"],
-                    "fotos": foto_namen,
-                    "sprachnotizen": audio_namen
-                })
+                    "fotos": raum["fotos"],
+                    "sprachnotizen": raum["audios"]
+                }
+                for raum in st.session_state.am_raeume
+            ]
 
             meta = {
                 "aufmass_id": aufmass_id,
@@ -466,14 +474,16 @@ if modus == "Aufmaß":
             meta_bytes = json.dumps(meta, ensure_ascii=False, indent=2).encode("utf-8")
             ok_meta, meldung_meta = github_datei_anlegen(f"{basis_pfad}/meta.json", meta_bytes, f"Aufmaß {aufmass_id} erfasst")
 
-            if ok_meta and not fehler_liste:
+            if ok_meta:
                 st.success(f"Aufmaß {aufmass_id} wurde übermittelt und ist jetzt bereit zum Abholen durch die Gewerbe-Zentrale.")
+                for key_loeschen in list(st.session_state.keys()):
+                    if key_loeschen.startswith("am_foto_verarbeitet_") or key_loeschen.startswith("am_audio_verarbeitet_"):
+                        del st.session_state[key_loeschen]
                 st.session_state.am_raeume = [{"name": "Raum 1", "positionen": [], "fotos": [], "audios": []}]
+                del st.session_state["am_aufmass_id"]
                 st.rerun()
-            elif ok_meta:
-                st.warning(f"Aufmaß {aufmass_id} wurde übermittelt, einzelne Dateien hatten aber Probleme: {'; '.join(fehler_liste)}")
             else:
-                st.error(f"Aufmaß konnte nicht übermittelt werden: {meldung_meta}")
+                st.error(f"Die Zusammenfassung (meta.json) konnte nicht übermittelt werden: {meldung_meta}. Die bereits hochgeladenen Fotos und Sprachnotizen zu Aufmaß {aufmass_id} sind aber schon gesichert und gehen nicht verloren - bitte Internetverbindung prüfen und erneut auf 'Aufmaß übermitteln' klicken.")
 
 # ===========================================================================
 # MODUS: KUNDENDIENSTBERICHT
@@ -495,18 +505,18 @@ else:
     if "kd_pending_taetigkeit" in st.session_state:
         st.session_state["kd_taetigkeit"] = st.session_state.pop("kd_pending_taetigkeit")
 
-    st.markdown("**Termin uebernehmen (optional)**")
-    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt, kannst du die Daten hier automatisch uebernehmen.")
+    st.markdown("**Termin übernehmen (optional)**")
+    st.caption("Wurde der Termin bereits in der Gewerbe-Zentrale angelegt, kannst du die Daten hier automatisch übernehmen.")
     termine_offen = offene_termine_laden()
     if not termine_offen:
-        st.caption("Keine vorausgefuellten Termine gefunden (oder GitHub nicht konfiguriert).")
+        st.caption("Keine vorausgefüllten Termine gefunden (oder GitHub nicht konfiguriert).")
     else:
         termin_optionen = ["Kein Termin - manuell erfassen"] + [
             f"{t.get('datum_einsatz', '')} {t.get('uhrzeit', '')} - {t.get('kunde', '')}" for t in termine_offen
         ]
-        termin_wahl = st.selectbox("Termin auswaehlen", termin_optionen, key="kd_termin_wahl")
+        termin_wahl = st.selectbox("Termin auswählen", termin_optionen, key="kd_termin_wahl")
         if termin_wahl != "Kein Termin - manuell erfassen":
-            if st.button("Daten aus Termin uebernehmen"):
+            if st.button("Daten aus Termin übernehmen"):
                 termin_gewaehlt = termine_offen[termin_optionen.index(termin_wahl) - 1]
                 st.session_state["kd_pending_kunde"] = termin_gewaehlt.get("kunde", "")
                 st.session_state["kd_pending_adresse"] = termin_gewaehlt.get("adresse", "")
@@ -590,7 +600,7 @@ else:
             st.session_state.pop("kd_unterschrift_canvas", None)
             st.rerun()
     else:
-        st.warning("Die Unterschriftenfläche steht auf diesem Geraet gerade nicht zur Verfuegung (Baustein 'streamlit-drawable-canvas' fehlt). Der Bericht kann trotzdem ohne Unterschrift übermittelt werden.")
+        st.warning("Die Unterschriftenfläche steht auf diesem Gerät gerade nicht zur Verfügung (Baustein 'streamlit-drawable-canvas' fehlt). Der Bericht kann trotzdem ohne Unterschrift übermittelt werden.")
 
     st.divider()
 
