@@ -1,0 +1,17 @@
+{
+  "bericht_id": "KD-20261006-065132-6df0d4",
+  "erstellt_am": "06.10.2026 06:51",
+  "kunde": "123 Test",
+  "adresse": "Testhausen",
+  "datum_einsatz": "06.10.2026",
+  "taetigkeit": "Planung ausbessern ",
+  "material": "",
+  "beginn": "08:05",
+  "ende": "08:50",
+  "arbeitszeit_stunden": 0.75,
+  "fotos": [
+    "foto_1.jpg",
+    "foto_2.jpg"
+  ],
+  "unterschrift": "unterschrift.png"
+}
