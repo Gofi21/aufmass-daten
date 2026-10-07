@@ -1,7 +1,196 @@
 {
  "erstellt": "07.10.2026 12:44",
  "plaene": [],
- "vorlagen": {},
+ "vorlagen": {
+  "WV-0001": {
+   "name": "Heizungswartung",
+   "gewerk": "Heizung",
+   "punkte": [
+    {
+     "punkt": "Sichtprüfung Wärmeerzeuger und Abgasführung",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Brenner / Verbrennung prüfen",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Abgasmessung CO",
+     "typ": "messwert",
+     "einheit": "ppm"
+    },
+    {
+     "punkt": "Anlagendruck",
+     "typ": "messwert",
+     "einheit": "bar"
+    },
+    {
+     "punkt": "Sicherheitsventil und Ausdehnungsgefäß",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Umwälzpumpen",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Regelung / Heizkurve",
+     "typ": "pruefen",
+     "einheit": ""
+    }
+   ],
+   "texte": [
+    "Anlage arbeitet einwandfrei, keine Beanstandungen.",
+    "Empfehlung: Bauteil innerhalb der nächsten 12 Monate erneuern.",
+    "Der Kunde wurde über die festgestellten Mängel informiert."
+   ],
+   "material": []
+  },
+  "WV-0002": {
+   "name": "Elektro - Sichtprüfung und Funktionstest",
+   "gewerk": "Elektro",
+   "punkte": [
+    {
+     "punkt": "Verteiler / Zählerschrank Sichtprüfung",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "FI-/RCD-Auslösetest",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Isolationswiderstand",
+     "typ": "messwert",
+     "einheit": "MΩ"
+    },
+    {
+     "punkt": "Rauchwarnmelder Funktion",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Notbeleuchtung Funktion",
+     "typ": "pruefen",
+     "einheit": ""
+    }
+   ],
+   "texte": [
+    "Keine Mängel festgestellt.",
+    "Mängel wurden schriftlich mitgeteilt, Nachprüfung empfohlen.",
+    "Hinweis: Dieser Nachweis ersetzt kein Prüfprotokoll nach den einschlägigen Normen und Vorschriften."
+   ],
+   "material": []
+  },
+  "WV-0003": {
+   "name": "Sanitär-Wartung",
+   "gewerk": "Sanitär",
+   "punkte": [
+    {
+     "punkt": "Rückspülfilter gespült / Kartusche gewechselt",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Wasserdruck",
+     "typ": "messwert",
+     "einheit": "bar"
+    },
+    {
+     "punkt": "Dichtheit sichtbarer Leitungen",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Enthärtungsanlage / Salzvorrat",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Hebeanlage Probelauf",
+     "typ": "pruefen",
+     "einheit": ""
+    }
+   ],
+   "texte": [
+    "Alle Prüfpunkte in Ordnung.",
+    "Undichtigkeit festgestellt - Reparaturangebot folgt."
+   ],
+   "material": []
+  },
+  "WV-0004": {
+   "name": "Hausmeister-Rundgang",
+   "gewerk": "Hausmeister / Reinigung",
+   "punkte": [
+    {
+     "punkt": "Treppenhaus und Flure",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Beleuchtung",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Außenanlagen und Wege",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Mülltonnenstandplatz",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Keller und Gemeinschaftsräume",
+     "typ": "pruefen",
+     "einheit": ""
+    }
+   ],
+   "texte": [
+    "Keine Auffälligkeiten.",
+    "Schaden festgestellt und dem Eigentümer/Verwalter gemeldet.",
+    "Winterdienst/Streupflicht kontrolliert."
+   ],
+   "material": []
+  },
+  "WV-0005": {
+   "name": "Garten-Pflege",
+   "gewerk": "Garten / Landschaftsbau",
+   "punkte": [
+    {
+     "punkt": "Rasen gemäht und Kanten geschnitten",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Beete gepflegt",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Hecken / Gehölze geschnitten",
+     "typ": "pruefen",
+     "einheit": ""
+    },
+    {
+     "punkt": "Grünschnitt entsorgt",
+     "typ": "pruefen",
+     "einheit": ""
+    }
+   ],
+   "texte": [
+    "Pflegearbeiten vollständig ausgeführt.",
+    "Wegen Witterung teilweise verschoben, Nachholtermin folgt."
+   ],
+   "material": []
+  }
+ },
  "lager": [
   {
    "artikel_id": "ART-0001",
