@@ -1,0 +1,22 @@
+{
+ "erstellt": "07.10.2026 12:44",
+ "plaene": [],
+ "vorlagen": {},
+ "lager": [
+  {
+   "artikel_id": "ART-0001",
+   "bezeichnung": "Nagel",
+   "einheit": "Stueck"
+  },
+  {
+   "artikel_id": "ART-0002",
+   "bezeichnung": "Schraube",
+   "einheit": "Stueck"
+  },
+  {
+   "artikel_id": "ART-0003",
+   "bezeichnung": "Fliese",
+   "einheit": "Stueck"
+  }
+ ]
+}
