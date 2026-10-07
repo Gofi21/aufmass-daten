@@ -21,7 +21,7 @@ except Exception:
 
 st.set_page_config(page_title="Aufmaß-Erfassung", layout="centered")
 
-APP_VERSION = "1.7.0"
+APP_VERSION = "1.8.0"
 
 # ---------------------------------------------------------------------------
 # Konfiguration ueber Streamlit Secrets (in Streamlit Community Cloud unter
@@ -242,6 +242,26 @@ def offene_termine_laden():
     return termine
 
 
+@st.cache_data(ttl=60)
+def wartung_plaene_laden():
+    """Holt die von der Gewerbe-Zentrale bereitgestellten Wartungspläne, Nachweis-Vorlagen und Lagerartikel
+    (wartung/plaene.json). Enthält keine Preise und keine Zugangsdaten."""
+    roh_bytes, fehler = github_datei_lesen("wartung/plaene.json")
+    if fehler or not roh_bytes:
+        return None
+    try:
+        return json.loads(roh_bytes.decode("utf-8"))
+    except Exception:
+        return None
+
+
+def _datum_sortierung(text):
+    try:
+        return datetime.strptime(str(text), "%d.%m.%Y")
+    except Exception:
+        return datetime.max
+
+
 def bild_komprimieren(foto_bytes):
     """Verkleinert ein Foto auf eine sinnvolle Größe, damit es sicher per API hochgeladen werden kann."""
     if not PIL_VERFUEGBAR:
@@ -301,7 +321,7 @@ st.caption(f"Version {APP_VERSION}")
 
 modus = st.radio(
     "Was möchtest du erfassen?",
-    ["Aufmaß", "Kundendienstbericht"],
+    ["Aufmaß", "Kundendienstbericht", "Wartungsnachweis"],
     horizontal=True,
     key="modus_auswahl"
 )
@@ -488,7 +508,7 @@ if modus == "Aufmaß":
 # ===========================================================================
 # MODUS: KUNDENDIENSTBERICHT
 # ===========================================================================
-else:
+elif modus == "Kundendienstbericht":
     st.subheader("Kundendienstbericht")
     st.caption("Nach dem Absenden wird der Bericht von der Gewerbe-Zentrale abgeholt und als PDF mit Unterschrift erstellt. Die fortlaufende Berichtsnummer (z. B. KDB-2026-0007) wird dabei automatisch vergeben und erscheint auf dem fertigen PDF.")
 
@@ -656,6 +676,149 @@ else:
                 st.warning(f"Kundendienstbericht {bericht_id} wurde übermittelt, einzelne Dateien hatten aber Probleme: {'; '.join(fehler_liste_kd)}")
             else:
                 st.error(f"Kundendienstbericht konnte nicht übermittelt werden: {meldung_meta_kd}")
+
+# ===========================================================================
+# MODUS: WARTUNGSNACHWEIS
+# ===========================================================================
+else:
+    st.subheader("Wartungsnachweis")
+    st.caption("Fällige Wartungen und Leistungen aus der Gewerbe-Zentrale abhaken. Nach dem Absenden wird der Nachweis dort abgeholt, als PDF mit Unterschrift erstellt und der nächste Termin automatisch berechnet.")
+    wt_daten = wartung_plaene_laden()
+    if not wt_daten or not wt_daten.get("plaene"):
+        st.info("Keine Wartungspläne gefunden (oder GitHub nicht konfiguriert). Lege in der Gewerbe-Zentrale unter 'Objekte & Wartung' einen Wartungsplan an und öffne dort die Seite einmal, dann erscheint er hier.")
+    else:
+        st.caption(f"Stand der Pläne: {wt_daten.get('erstellt', '?')}")
+        wt_plaene = sorted(wt_daten["plaene"], key=lambda p: _datum_sortierung(p.get("faellig")))
+        wt_optionen = [f"{p.get('faellig', '')} · {p.get('kunde', '')} · {p.get('objekt', '')} · {p.get('leistung', '')}" for p in wt_plaene]
+        wt_wahl = st.selectbox("Welche Leistung wurde ausgeführt?", range(len(wt_optionen)), format_func=lambda i: wt_optionen[i], key="wt_plan")
+        wt_plan = wt_plaene[wt_wahl]
+        wt_pid = wt_plan["plan_id"]
+        wt_vorlage = (wt_daten.get("vorlagen") or {}).get(wt_plan.get("vorlage_id") or "", None)
+        if wt_plan.get("standort"):
+            st.caption(f"Einsatzort: {wt_plan['standort']}")
+        if "wt_fotos" not in st.session_state:
+            st.session_state.wt_fotos = []
+
+        wt_datum = st.date_input("Ausgeführt am", datetime.now(), key=f"wt_datum_{wt_pid}")
+        wt_von = st.text_input("Ausgeführt durch", key=f"wt_von_{wt_pid}")
+        wt_ergebnis = st.selectbox("Gesamtergebnis", ["In Ordnung", "Mängel festgestellt - Nacharbeit nötig", "Nicht durchführbar / Nachholtermin nötig"], key=f"wt_erg_{wt_pid}")
+
+        wt_checkliste = []
+        if wt_vorlage and wt_vorlage.get("punkte"):
+            st.markdown("**Prüfpunkte**")
+            for i, punkt in enumerate(wt_vorlage["punkte"]):
+                st.write(punkt.get("punkt", ""))
+                wt_erg_punkt = st.radio("Ergebnis", ["OK", "Mangel", "n. a."], horizontal=True, key=f"wt_cl_{wt_pid}_{i}", label_visibility="collapsed")
+                wt_wert = ""
+                if punkt.get("typ") == "messwert":
+                    wt_wert = st.text_input(f"Messwert in {punkt.get('einheit', '')}", key=f"wt_cw_{wt_pid}_{i}")
+                wt_checkliste.append({"punkt": punkt.get("punkt", ""), "typ": punkt.get("typ", "pruefen"), "ergebnis": wt_erg_punkt,
+                                      "wert": wt_wert, "einheit": punkt.get("einheit", ""), "bemerkung": ""})
+
+        wt_texte = st.multiselect("Textbausteine", (wt_vorlage or {}).get("texte", []), key=f"wt_txt_{wt_pid}")
+        wt_notiz_frei = st.text_area("Weitere Bemerkungen", key=f"wt_notiz_{wt_pid}", height=100)
+
+        st.markdown("**Verwendetes Material**")
+        wt_material = []
+        for i, m in enumerate((wt_vorlage or {}).get("material", [])):
+            menge_v = st.number_input(f"{m.get('Bezeichnung', '')} ({m.get('Einheit', '')})", min_value=0.0, value=0.0, step=1.0, key=f"wt_vm_{wt_pid}_{i}")
+            if menge_v > 0:
+                wt_material.append({"Artikel_ID": m.get("Artikel_ID", ""), "Bezeichnung": m.get("Bezeichnung", ""), "Menge": menge_v, "Einheit": m.get("Einheit", "")})
+        wt_lager = {f"{a['artikel_id']} - {a['bezeichnung']}": a for a in wt_daten.get("lager", [])}
+        wt_gewaehlt = st.multiselect("Weiteres Material aus dem Lager", list(wt_lager.keys()), key=f"wt_lager_{wt_pid}")
+        for j, schluessel in enumerate(wt_gewaehlt):
+            art = wt_lager[schluessel]
+            menge_l = st.number_input(f"Menge: {art['bezeichnung']} ({art.get('einheit', '')})", min_value=0.0, value=1.0, step=1.0, key=f"wt_lm_{wt_pid}_{j}_{art['artikel_id']}")
+            if menge_l > 0:
+                wt_material.append({"Artikel_ID": art["artikel_id"], "Bezeichnung": art["bezeichnung"], "Menge": menge_l, "Einheit": art.get("einheit", "")})
+        wt_frei = st.text_input("Sonstiges Material (Freitext)", key=f"wt_frei_{wt_pid}")
+        if wt_frei.strip():
+            wt_material.append({"Artikel_ID": "", "Bezeichnung": wt_frei.strip(), "Menge": 1.0, "Einheit": "Stk."})
+
+        st.markdown("**Arbeitszeit (optional)**")
+        wt_c1, wt_c2 = st.columns(2)
+        with wt_c1:
+            wt_beginn = st.time_input("Beginn", datetime.now().replace(second=0, microsecond=0), key=f"wt_beginn_{wt_pid}")
+        with wt_c2:
+            wt_ende = st.time_input("Ende", datetime.now().replace(second=0, microsecond=0), key=f"wt_ende_{wt_pid}")
+        wt_b = datetime.combine(datetime.today(), wt_beginn)
+        wt_e = datetime.combine(datetime.today(), wt_ende)
+        if wt_e < wt_b:
+            wt_e += timedelta(days=1)
+        wt_stunden = round((wt_e - wt_b).total_seconds() / 3600, 2)
+        wt_zeit_angeben = st.checkbox(f"Arbeitszeit angeben ({wt_stunden:g} Std.)", value=False, key=f"wt_zeit_{wt_pid}")
+
+        st.markdown("**Fotos (optional)**")
+        wt_uploads = st.file_uploader("Foto(s) hochladen", type=["jpg", "jpeg", "png", "heic"], accept_multiple_files=True, key=f"wt_foto_upload_{wt_pid}")
+        if wt_uploads:
+            wt_bekannt = st.session_state.get("wt_foto_verarbeitet", set())
+            wt_neu = 0
+            for datei in wt_uploads:
+                kennung = f"{datei.name}_{datei.size}"
+                if kennung in wt_bekannt:
+                    continue
+                st.session_state.wt_fotos.append(bild_komprimieren(datei.getvalue()))
+                wt_bekannt.add(kennung)
+                wt_neu += 1
+            st.session_state.wt_foto_verarbeitet = wt_bekannt
+            if wt_neu:
+                st.success(f"{wt_neu} Foto(s) hinzugefügt ({len(st.session_state.wt_fotos)} insgesamt).")
+
+        st.divider()
+        st.markdown("**Unterschrift des Kunden (Kenntnisnahme)**")
+        wt_unterschrift_bytes = None
+        if CANVAS_VERFUEGBAR:
+            wt_canvas = st_canvas(fill_color="rgba(255, 255, 255, 0)", stroke_width=3, stroke_color="#000000", background_color="#FFFFFF",
+                                  height=200, width=500, drawing_mode="freedraw", key="wt_unterschrift_canvas")
+            if wt_canvas is not None and wt_canvas.image_data is not None:
+                try:
+                    us_bild = Image.fromarray(wt_canvas.image_data.astype("uint8"), "RGBA").convert("RGB")
+                    us_puffer = BytesIO()
+                    us_bild.save(us_puffer, format="PNG")
+                    wt_unterschrift_bytes = us_puffer.getvalue()
+                except Exception:
+                    wt_unterschrift_bytes = None
+            if st.button("Unterschrift löschen", key="wt_us_loeschen"):
+                st.session_state.pop("wt_unterschrift_canvas", None)
+                st.rerun()
+        else:
+            st.warning("Die Unterschriftenfläche steht auf diesem Gerät gerade nicht zur Verfügung. Der Nachweis kann trotzdem ohne Unterschrift übermittelt werden.")
+
+        st.divider()
+        if st.button("Wartungsnachweis übermitteln", type="primary", key="wt_senden"):
+            wt_id = f"WT-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+            wt_basis = f"wartung/{wt_id}"
+            wt_foto_namen, wt_fehler = [], []
+            for idx, foto_bytes in enumerate(st.session_state.wt_fotos):
+                name = f"foto_{idx + 1}.jpg"
+                ok, meldung = github_datei_anlegen(f"{wt_basis}/{name}", foto_bytes, f"Foto zu Wartungsnachweis {wt_id}")
+                if ok:
+                    wt_foto_namen.append(name)
+                else:
+                    wt_fehler.append(f"{name}: {meldung}")
+            wt_us_name = None
+            if wt_unterschrift_bytes:
+                ok_us, meldung_us = github_datei_anlegen(f"{wt_basis}/unterschrift.png", wt_unterschrift_bytes, f"Unterschrift zu Wartungsnachweis {wt_id}")
+                if ok_us:
+                    wt_us_name = "unterschrift.png"
+                else:
+                    wt_fehler.append(f"unterschrift.png: {meldung_us}")
+            wt_meta = {
+                "id": wt_id, "erstellt_am": datetime.now().strftime("%d.%m.%Y %H:%M"), "plan_id": wt_pid, "kunde": wt_plan.get("kunde", ""), "objekt": wt_plan.get("objekt", ""),
+                "leistung": wt_plan.get("leistung", ""), "datum": wt_datum.strftime("%d.%m.%Y"), "von": wt_von, "ergebnis": wt_ergebnis,
+                "notiz": "\n".join(wt_texte + ([wt_notiz_frei.strip()] if wt_notiz_frei.strip() else [])), "checkliste": wt_checkliste, "material": wt_material,
+                "arbeitszeit": f"{wt_stunden:g}" if wt_zeit_angeben else "", "fotos": wt_foto_namen, "unterschrift": wt_us_name}
+            ok_meta, meldung_meta = github_datei_anlegen(f"{wt_basis}/meta.json", json.dumps(wt_meta, ensure_ascii=False, indent=2).encode("utf-8"), f"Wartungsnachweis {wt_id} erfasst")
+            if ok_meta and not wt_fehler:
+                st.success(f"Wartungsnachweis {wt_id} wurde übermittelt und ist jetzt bereit zum Abholen durch die Gewerbe-Zentrale.")
+                st.session_state.wt_fotos = []
+                st.session_state.pop("wt_foto_verarbeitet", None)
+                st.session_state.pop("wt_unterschrift_canvas", None)
+                st.rerun()
+            elif ok_meta:
+                st.warning(f"Wartungsnachweis {wt_id} wurde übermittelt, einzelne Dateien hatten aber Probleme: {'; '.join(wt_fehler)}")
+            else:
+                st.error(f"Wartungsnachweis konnte nicht übermittelt werden: {meldung_meta}")
 
 st.divider()
 if st.button("Abmelden"):
