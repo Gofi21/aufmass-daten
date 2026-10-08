@@ -1,0 +1,17 @@
+{
+  "aufmass_id": "AM-20261008-094301-902079",
+  "erstellt_am": "08.10.2026 09:45",
+  "kunde": "Zweiter von heute",
+  "adresse": "Fleiche welle",
+  "notiz_projekt": "",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
