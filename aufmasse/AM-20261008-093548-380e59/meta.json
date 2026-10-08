@@ -1,0 +1,17 @@
+{
+  "aufmass_id": "AM-20261008-093548-380e59",
+  "erstellt_am": "08.10.2026 09:37",
+  "kunde": "Tester heute",
+  "adresse": "Da wo Autos parken ",
+  "notiz_projekt": "",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
