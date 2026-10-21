@@ -1,0 +1,16 @@
+{
+  "bericht_id": "KD-20261021-054053-b580ed",
+  "erstellt_am": "21.10.2026 05:40",
+  "kunde": "Meier",
+  "adresse": "Musterhaus",
+  "datum_einsatz": "21.10.2026",
+  "taetigkeit": "Maschine prüfen",
+  "material": "Schraubendreher",
+  "beginn": "07:30",
+  "ende": "08:00",
+  "arbeitszeit_stunden": 0.5,
+  "fotos": [
+    "foto_1.jpg"
+  ],
+  "unterschrift": "unterschrift.png"
+}
