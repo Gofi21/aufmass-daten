@@ -1,0 +1,17 @@
+{
+  "aufmass_id": "AM-20261021-054210-035e42",
+  "erstellt_am": "21.10.2026 05:42",
+  "kunde": "Meyer",
+  "adresse": "Meyerstarsle 27",
+  "notiz_projekt": "",
+  "raeume": [
+    {
+      "name": "Raum 1",
+      "positionen": [],
+      "fotos": [],
+      "sprachnotizen": [
+        "sprachnotiz_1_1.wav"
+      ]
+    }
+  ]
+}
